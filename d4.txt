@@ -1,0 +1,46 @@
+#Implement job sequencing with deadlines using a greedy method
+
+class Job:
+    def __init__(self, id, deadline, profit):
+        self.id = id
+        self.deadline = deadline
+        self.profit = profit
+def jobSequencing(jobs, n):
+        # Step 1: Sort jobs in descending order of profit
+        jobs.sort(key=lambda x: x.profit, reverse=True)
+
+        # Step 2: Initialize the result sequence
+        result = [None] * n # To store the sequence of jobs
+        slot = [False] * n # To mark which time slots are already occupied
+
+        # Step 3: Iterate over all jobs and find a slot for each job
+        total_profit = 0
+        for job in jobs:
+            # Find a slot for this job (starting from its deadline)
+            for j in range(min(n, job.deadline) - 1, -1, -1):
+                if not slot[j]: 
+                    # If the slot is free
+                    result[j] = job.id # Assign the job to this slot
+                    slot[j] = True # Mark this slot as occupied
+                    total_profit += job.profit # Add the profit 
+                    break
+
+        # Step 4: Print the sequence of jobs and the total profit
+        print("Job Sequence:", [job for job in result if job is not None])
+        print("Total Profit:", total_profit)
+                    
+# Driver code
+if __name__ == "__main__":
+    # User input for number of jobs
+    n = int(input("Enter the number of jobs: "))
+
+    jobs = []
+    for i in range(n):
+        print(f"Enter details for Job {i + 1}:")
+        job_id = int(input(f" Job ID: "))
+        deadline = int(input(f" Deadline: "))
+        profit = int(input(f" Profit: "))
+        jobs.append(Job(job_id, deadline, profit))
+
+    # Call the jobSequencing function
+    jobSequencing(jobs, n)

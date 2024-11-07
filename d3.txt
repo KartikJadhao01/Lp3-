@@ -1,0 +1,38 @@
+# Write a program to solve a 0-1 Knapsack problem using dynamic programming or branch and bound strategy. 
+
+# Function to solve 0-1 Knapsack problem using dynamic programming
+def knapsack_dp(capacity, weights, values, n):
+    # Initialize a 2D array to store maximum values for subproblems
+    dp = [[0 for _ in range(capacity + 1)] for _ in range(n + 1)]
+    # Build the dp array in a bottom-up manner
+    for i in range(1, n + 1):
+        for w in range(capacity + 1):
+            if weights[i - 1] <= w:
+                # If the item can fit in the knapsack, decide to include or exclude it
+                dp[i][w] = max(dp[i - 1][w], values[i - 1] + dp[i - 1][w - weights[i - 1]])
+            else:
+                # Exclude the item
+                dp[i][w] = dp[i - 1][w]
+                # The bottom-right cell of the dp array contains the maximum value 
+    return dp[n][capacity]
+
+
+# User input for items and knapsack capacity
+try:
+    n = int(input("Enter number of items: "))
+    values = []
+    weights = []
+
+    for i in range(n):
+        value = int(input(f"Enter value of item {i + 1}: "))
+        weight = int(input(f"Enter weight of item {i + 1}: "))
+        values.append(value)
+        weights.append(weight)
+
+    capacity = int(input("Enter knapsack capacity: "))
+
+    # Calculate maximum value
+    max_value = knapsack_dp(capacity, weights, values, n)
+    print(f"Maximum value in the knapsack: {max_value}")
+except ValueError:
+    print("Invalid input! Please enter integer values for item weights, values, and capacity.")

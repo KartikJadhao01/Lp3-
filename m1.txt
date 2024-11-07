@@ -1,0 +1,109 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.preprocessing import StandardScaler
+from datetime import datetime
+from math import radians, cos, sin, sqrt, atan2
+
+# Load dataset
+try:
+ data = pd.read_csv('uber.csv')
+ print("Dataset loaded successfully.")
+except FileNotFoundError:
+ print("Dataset not found. Make sure 'uber.csv' is in the current directory.")
+# Display initial dataset information
+print("\nInitial Dataset Information:")
+print(data.head())
+print(data.info())
+# Drop unnecessary columns
+data.drop(columns=['Unnamed: 0', 'key'], inplace=True)
+# Convert pickup_datetime to datetime
+data['pickup_datetime'] = pd.to_datetime(data['pickup_datetime'], errors='coerce')
+# Drop rows with missing values in important columns
+data.dropna(subset=['pickup_longitude', 'pickup_latitude', 'dropoff_longitude', 'dropoff_latitude', 'fare_amount'], inplace=True)
+
+# Filter out invalid values for fare_amount and passenger_count
+data = data[(data['fare_amount'] > 0) & (data['fare_amount'] < 100)]
+data = data[(data['passenger_count'] > 0) & (data['passenger_count']<= 6)]
+
+# Calculate distance using Haversine formula
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371 # Radius of Earth in kilometers
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    return R * 2 * atan2(sqrt(a), sqrt(1 - a))
+  
+data['distance'] = data.apply(lambda row:
+                              haversine(row['pickup_latitude'], row['pickup_longitude'], row['dropoff_latitude'], row['dropoff_longitude']), axis=1)
+
+# Remove rows with zero or unrealistic distance
+data = data[(data['distance'] > 0) & (data['distance'] < 100)]
+
+# Extract pickup hour and day of week
+data['pickup_hour'] = data['pickup_datetime'].dt.hour
+data['pickup_day'] = data['pickup_datetime'].dt.dayofweek
+
+# 2. Identify Outliers using Z-score
+print("\nIdentifying and removing outliers...")
+z_scores = np.abs((data[['fare_amount', 'distance']] -
+data[['fare_amount', 'distance']].mean()) / data[['fare_amount', 'distance']].std())
+data = data[(z_scores < 3).all(axis=1)] # Remove rows where any zscore is above 3
+
+# 3. Check the correlation between variables
+print("\nCorrelation matrix:")
+corr_matrix = data[['fare_amount', 'distance', 'pickup_hour', 'pickup_day']].corr()
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
+plt.show()
+
+# 4. Prepare features and labels
+X = data[['distance', 'pickup_hour', 'pickup_day']]
+y = data['fare_amount']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 5. Implement and evaluate Linear Regression model
+print("\nTraining Linear Regression model...")
+linear_reg = LinearRegression()
+linear_reg.fit(X_train_scaled, y_train)
+
+# Predictions and evaluation
+y_pred_lr = linear_reg.predict(X_test_scaled)
+r2_lr = r2_score(y_test, y_pred_lr)
+rmse_lr = np.sqrt(mean_squared_error(y_test, y_pred_lr))
+print(f"Linear Regression R2 Score: {r2_lr:.3f}")
+print(f"Linear Regression RMSE: {rmse_lr:.3f}")
+
+# 6. Implement and evaluate Random Forest Regression model
+print("\nTraining Random Forest Regression model...")
+random_forest = RandomForestRegressor(n_estimators=100, random_state=42)
+random_forest.fit(X_train_scaled, y_train)
+
+# Predictions and evaluation
+y_pred_rf = random_forest.predict(X_test_scaled)
+r2_rf = r2_score(y_test, y_pred_rf)
+rmse_rf = np.sqrt(mean_squared_error(y_test, y_pred_rf))
+print(f"Random Forest Regression R2 Score: {r2_rf:.3f}")
+print(f"Random Forest Regression RMSE: {rmse_rf:.3f}")
+
+# Comparison of Models
+print("\nModel Comparison:")
+print(f"Linear Regression - R2: {r2_lr:.3f}, RMSE: {rmse_lr:.3f}")
+print(f"Random Forest Regression - R2: {r2_rf:.3f}, RMSE: {rmse_rf:.3f}")
+if r2_rf > r2_lr:
+    print("\nRandom Forest Regression performed better than Linear Regression.")
+else:
+    print("\nLinear Regression performed better than Random Forest Regression.")
+

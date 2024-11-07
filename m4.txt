@@ -1,0 +1,49 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+
+
+# Load the dataset
+try:
+    data = pd.read_csv('diabetes.csv')
+    print("Dataset loaded successfully.")
+except FileNotFoundError:
+    print("Dataset not found. Make sure 'diabetes.csv' is in the current directory.")
+    
+# Display initial dataset information
+print("\nInitial Dataset Information:")
+print(data.head())
+print(data.info())
+
+# Separate features and target variable
+X = data.drop(columns=['Outcome']) # Features
+y = data['Outcome'] # Target
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the KNN model
+k = 5 # You can experiment with different values of k
+knn = KNeighborsClassifier(n_neighbors=k)
+
+# Train the model
+knn.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = knn.predict(X_test)
+
+# Compute evaluation metrics
+conf_matrix = confusion_matrix(y_test, y_pred)
+accuracy = accuracy_score(y_test, y_pred)
+error_rate = 1 - accuracy
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+
+# Display the results
+print("\nEvaluation Metrics:")
+print("Confusion Matrix:\n", conf_matrix)
+print(f"Accuracy: {accuracy:.3f}")
+print(f"Error Rate: {error_rate:.3f}")
+print(f"Precision: {precision:.3f}")
+print(f"Recall: {recall:.3f}")

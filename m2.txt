@@ -1,0 +1,73 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+
+# Load dataset
+try:
+    data = pd.read_csv('emails.csv')
+    print("Dataset loaded successfully.")
+except FileNotFoundError:
+    print("Dataset not found. Make sure 'emails.csv' is in the current directory.")
+    
+# Display initial dataset information
+print("\nInitial Dataset Information:")
+print(data.head())
+print(data.info())
+
+# Drop unnecessary columns
+data.drop(columns=['Email No.'], inplace=True)
+
+# Check for missing values
+print("\nChecking for missing values...")
+print(data.isnull().sum())
+
+# Separate features and target
+X = data.drop(columns=['Prediction']) # Features
+y = data['Prediction'] # Target
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize the features for KNN and SVM
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 1. K-Nearest Neighbors Classifier
+print("\nTraining K-Nearest Neighbors Classifier...")
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train_scaled, y_train)
+
+# Predictions and evaluation for KNN
+y_pred_knn = knn.predict(X_test_scaled)
+accuracy_knn = accuracy_score(y_test, y_pred_knn)
+print("\nK-Nearest Neighbors Classifier Performance:")
+print(f"Accuracy: {accuracy_knn:.3f}")
+print("Classification Report:\n", classification_report(y_test, y_pred_knn))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_knn))
+
+# 2. Support Vector Machine Classifier
+print("\nTraining Support Vector Machine Classifier...")
+svm = SVC(kernel='linear', random_state=42)
+svm.fit(X_train_scaled, y_train)
+
+# Predictions and evaluation for SVM
+y_pred_svm = svm.predict(X_test_scaled)
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+print("\nSupport Vector Machine Classifier Performance:")
+print(f"Accuracy: {accuracy_svm:.3f}")
+print("Classification Report:\n", classification_report(y_test, y_pred_svm))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_svm))
+
+# Comparison of Models
+print("\nModel Comparison:")
+print(f"K-Nearest Neighbors - Accuracy: {accuracy_knn:.3f}")
+print(f"Support Vector Machine - Accuracy: {accuracy_svm:.3f}")
+if accuracy_svm > accuracy_knn:
+    print("\nSupport Vector Machine performed better than K-Nearest Neighbors.")
+else:
+    print("\nK-Nearest Neighbors performed better than Support Vector Machine.")
